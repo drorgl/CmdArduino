@@ -6,6 +6,14 @@ to them.
 *****************************************************/
 #include <Cmd.h>
 
+const char Banner[] = "*************** CMD *******************";
+const char Prompt[] = "CMD >> ";
+const char BadCommand[] = "CMD: Command not recognized.";
+
+Cmd cmdSerial(&Serial, 50,false, (char*)&Banner, (char*)&Prompt, (char*)&BadCommand);
+
+
+
 int pwm_pin = 10;
 
 void setup()
@@ -13,8 +21,7 @@ void setup()
   // set the led pin as an output. its part of the demo.
   pinMode(pwm_pin, OUTPUT); 
   
-  // init the command line and set it for a speed of 57600
-  cmdInit(57600);
+  Serial.begin(57600);
   
   // add the commands to the command table. These functions must
   // already exist in the sketch. See the functions below. 
@@ -24,12 +31,12 @@ void setup()
   //
   // arg_cnt is the number of arguments typed into the command line
   // args is a list of argument strings that were typed into the command line
-  cmdAdd("pwm", led_pwm);
+  cmdSerial.Add("pwm", led_pwm);
 }
 
 void loop()
 {
-  cmdPoll();
+  cmdSerial.Poll();
 }
 
 // This is another example to demonstrate how command line arguments can
@@ -48,9 +55,8 @@ void loop()
 //
 // This will turn off the LED.
 // 
-// Similar to ex3, when you use numeric arguments, you'll need to use the
-// cmdStr2Num function to convert the numeric string into a usable integer.
-// See ex3 or the tutorial for more information on this function. 
+// Similar to ex3, when you use numeric arguments, you'll need to convert them
+// into integers
 void led_pwm(int arg_cnt, char **args)
 {
   int pwm_val;
@@ -58,7 +64,8 @@ void led_pwm(int arg_cnt, char **args)
   if (arg_cnt > 1)
   {
     // if args are present, then use the first arg as the brightness level
-    pwm_val = cmdStr2Num(args[1], 10);
+	String str = args[1];
+    pwm_val = str.toInt();
     analogWrite(pwm_pin, pwm_val);
   }
   else

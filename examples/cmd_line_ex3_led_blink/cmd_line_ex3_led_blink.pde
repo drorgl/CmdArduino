@@ -6,6 +6,14 @@ to them.
 *****************************************************/
 #include <Cmd.h>
 
+const char Banner[] = "*************** CMD *******************";
+const char Prompt[] = "CMD >> ";
+const char BadCommand[] = "CMD: Command not recognized.";
+
+Cmd cmdSerial(&Serial, 50,false, (char*)&Banner, (char*)&Prompt, (char*)&BadCommand);
+
+
+
 int led_pin = 13;
 bool led_blink_enb = false;
 int led_blink_delay_time = 1000;
@@ -15,8 +23,7 @@ void setup()
   // set the led pin as an output. its part of the demo.
   pinMode(led_pin, OUTPUT); 
   
-  // init the command line and set it for a speed of 57600
-  cmdInit(57600);
+  Serial.begin(57600);
   
   // add the commands to the command table. These functions must
   // already exist in the sketch. See the functions below. 
@@ -26,12 +33,12 @@ void setup()
   //
   // arg_cnt is the number of arguments typed into the command line
   // args is a list of argument strings that were typed into the command line
-  cmdAdd("blink", led_blink);
+  cmdSerial.Add("blink", led_blink);
 }
 
 void loop()
 {
-  cmdPoll();
+  cmdSerial.Poll();
   
   // This is where the blinking happens. The led_blink function
   // only controls the delay time and whether to enable the blinking
@@ -64,16 +71,14 @@ void loop()
 //
 // Calling the function with no arguments will turn off the LED
 //
-// Also, you'll notice that the function "cmdStr2Num" is needed. Since
-// the numeric arg is stored as an ASCII string, it needs to be converted
-// to an integer. When you call cmdStr2Num, you need to specify two arguments:
-// 1) the numeric string to be converted
-// 2) the numeric base that will be used to convert it,ie: 10 = decimal, 16 = hex
+// Since the numeric arg is stored as an ASCII string, it needs to be 
+// converted to an integer. 
 void led_blink(int arg_cnt, char **args)
 {
   if (arg_cnt > 1)
   {
-    led_blink_delay_time = cmdStr2Num(args[1], 10);
+	String str(args[1]);
+    led_blink_delay_time = str.toInt();
     led_blink_enb = true;
   }
   else

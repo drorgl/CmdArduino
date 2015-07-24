@@ -44,37 +44,52 @@
 #else
 #include <WProgram.h>
 #endif
-#include "HardwareSerial.h"
+
+#include <Stream.h>
 #include "Cmd.h"
 
-// command line message buffer and pointer
-static uint8_t msg[MAX_MSG_SIZE];
-static uint8_t *msg_ptr;
+Cmd::Cmd(Stream *stream, int maxMessageSize, bool echo,const char * banner,const char * prompt,const char* unrecognize)
+{
+	//save pointer to stream
+	_stream = stream;
 
-// linked list for command table
-static cmd_t *cmd_tbl_list, *cmd_tbl;
+	_echo = echo;
 
-// text strings for command prompt (stored in flash)
-const char cmd_banner[] PROGMEM = "*************** CMD *******************";
-const char cmd_prompt[] PROGMEM = "CMD >> ";
-const char cmd_unrecog[] PROGMEM = "CMD: Command not recognized.";
+	// init the command table
+	cmd_tbl_list = NULL;
+
+	_maxMessageSize = maxMessageSize;
+
+	_banner = banner;
+	
+	_prompt = prompt;
+
+	_unrecognized = unrecognize;
+
+	// init the msg ptr
+	_msg = new char[_maxMessageSize];
+	_msg_ptr = _msg;
+
+	_catchall = NULL;
+}
+
+void Cmd::SetCatchAll(bool(*func)(char * line))
+{
+	_catchall = func;
+}
 
 /**************************************************************************/
 /*!
     Generate the main command prompt
 */
 /**************************************************************************/
-void cmd_display()
+void Cmd::display()
 {
-    char buf[50];
+    _stream->println();
 
-    Serial.println();
+	_stream->println(_banner);
 
-    strcpy_P(buf, cmd_banner);
-    Serial.println(buf);
-
-    strcpy_P(buf, cmd_prompt);
-    Serial.print(buf);
+    _stream->print(_prompt);
 }
 
 /**************************************************************************/
@@ -84,14 +99,26 @@ void cmd_display()
     it will jump to the corresponding function.
 */
 /**************************************************************************/
-void cmd_parse(char *cmd)
+void Cmd::parse(char *cmd)
 {
     uint8_t argc, i = 0;
     char *argv[30];
-    char buf[50];
     cmd_t *cmd_entry;
 
     fflush(stdout);
+
+	if (cmd[0] == '\0')
+	{
+		return;
+	}
+
+	if (_catchall != NULL)
+	{
+		if (_catchall(cmd) == false)
+		{
+			return;
+		}
+	}
 
     // parse the command line statement and break it up into space-delimited
     // strings. the array of strings will be saved in the argv array.
@@ -111,16 +138,17 @@ void cmd_parse(char *cmd)
         if (!strcmp(argv[0], cmd_entry->cmd))
         {
             cmd_entry->func(argc, argv);
-            cmd_display();
+            display();
             return;
         }
     }
 
     // command not recognized. print message and re-generate prompt.
-    strcpy_P(buf, cmd_unrecog);
-    Serial.println(buf);
+    _stream->print(_unrecognized);
+	_stream->print(cmd);
+	_stream->println();
 
-    cmd_display();
+    display();
 }
 
 /**************************************************************************/
@@ -130,34 +158,41 @@ void cmd_parse(char *cmd)
     or "enter" key. 
 */
 /**************************************************************************/
-void cmd_handler()
+void Cmd::handler()
 {
-    char c = Serial.read();
+    char c = _stream->read();
 
     switch (c)
     {
+	case '\n':
     case '\r':
         // terminate the msg and reset the msg ptr. then send
         // it to the handler for processing.
-        *msg_ptr = '\0';
-        Serial.print("\r\n");
-        cmd_parse((char *)msg);
-        msg_ptr = msg;
+        *_msg_ptr = '\0';
+		if (_echo == true){
+			_stream->print("\r\n");
+		}
+        parse((char *)_msg);
+        _msg_ptr = _msg;
         break;
     
     case '\b':
         // backspace 
-        Serial.print(c);
-        if (msg_ptr > msg)
+		if (_echo == true){
+			_stream->print(c);
+		}
+        if (_msg_ptr > _msg)
         {
-            msg_ptr--;
+            _msg_ptr--;
         }
         break;
     
     default:
         // normal character entered. add it to the buffer
-        Serial.print(c);
-        *msg_ptr++ = c;
+		if (_echo == true){
+			_stream->print(c);
+		}
+        *_msg_ptr++ = c;
         break;
     }
 }
@@ -168,30 +203,12 @@ void cmd_handler()
     constantly to check if there is any available input at the command prompt.
 */
 /**************************************************************************/
-void cmdPoll()
+void Cmd::Poll()
 {
-    while (Serial.available())
+    if (_stream->available())
     {
-        cmd_handler();
+        handler();
     }
-}
-
-/**************************************************************************/
-/*!
-    Initialize the command line interface. This sets the terminal speed and
-    and initializes things. 
-*/
-/**************************************************************************/
-void cmdInit(uint32_t speed)
-{
-    // init the msg ptr
-    msg_ptr = msg;
-
-    // init the command table
-    cmd_tbl_list = NULL;
-
-    // set the serial speed
-    Serial.begin(speed);
 }
 
 /**************************************************************************/
@@ -200,7 +217,7 @@ void cmdInit(uint32_t speed)
     at the setup() portion of the sketch. 
 */
 /**************************************************************************/
-void cmdAdd(char *name, void (*func)(int argc, char **argv))
+void Cmd::Add(const char *name, void (*func)(int argc, char **argv))
 {
     // alloc memory for command struct
     cmd_tbl = (cmd_t *)malloc(sizeof(cmd_t));
@@ -221,13 +238,3 @@ void cmdAdd(char *name, void (*func)(int argc, char **argv))
     cmd_tbl_list = cmd_tbl;
 }
 
-/**************************************************************************/
-/*!
-    Convert a string to a number. The base must be specified, ie: "32" is a
-    different value in base 10 (decimal) and base 16 (hexadecimal).
-*/
-/**************************************************************************/
-uint32_t cmdStr2Num(char *str, uint8_t base)
-{
-    return strtol(str, NULL, base);
-}

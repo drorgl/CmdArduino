@@ -10,3 +10,13 @@ the functions they wrote so they can easily toggle pins, set blinking speed,
 set pwm duty cycles, or whatever else might need command line user input. Using
 it is fairly simple and just requires unzipping the files into the
 "Arduino/libraries" sub-directory in the Arduino program folder.
+
+
+Modified by Dror Gluska:
+- Convert to C++,
+- Support multiple serial interfaces (HardwareSerial, AltSoftSerial)
+- Works with Streams
+- Catch All function
+- Poll retrieves only one character at a time so other tasks can continue instead of everything waiting for the poll to finish.
+- Echo optional
+

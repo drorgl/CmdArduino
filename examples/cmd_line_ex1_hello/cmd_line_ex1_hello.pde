@@ -6,10 +6,16 @@ to them.
 *****************************************************/
 #include <Cmd.h>
 
+const char Banner[] = "*************** CMD *******************";
+const char Prompt[] = "CMD >> ";
+const char BadCommand[] = "CMD: Command not recognized.";
+
+Cmd cmdSerial(&Serial, 50,false, (char*)&Banner, (char*)&Prompt, (char*)&BadCommand);
+
 void setup()
 {
-  // init the command line and set it for a speed of 57600
-  cmdInit(57600);
+  Serial.begin(57600);
+  
   
   // add the commands to the command table. These functions must
   // already exist in the sketch. See the functions below. 
@@ -19,12 +25,12 @@ void setup()
   //
   // arg_cnt is the number of arguments typed into the command line
   // args is a list of argument strings that were typed into the command line
-  cmdAdd("hello", hello);
+  cmdSerial.Add("hello", hello);
 }
 
 void loop()
 {
-  cmdPoll();
+  cmdSerial.Poll();
 }
 
 // Print "hello world" when called from the command line.

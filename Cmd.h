@@ -41,20 +41,50 @@
 #ifndef CMD_H
 #define CMD_H
 
-#define MAX_MSG_SIZE    60
+//#define MAX_MSG_SIZE    60
 #include <stdint.h>
+#include <Stream.h>
 
 // command line structure
 typedef struct _cmd_t
 {
-    char *cmd;
-    void (*func)(int argc, char **argv);
-    struct _cmd_t *next;
+	char *cmd;
+	void(*func)(int argc, char **argv);
+	struct _cmd_t *next;
 } cmd_t;
 
-void cmdInit(uint32_t speed);
-void cmdPoll();
-void cmdAdd(char *name, void (*func)(int argc, char **argv));
-uint32_t cmdStr2Num(char *str, uint8_t base);
+class Cmd{
+private:
+	Stream *_stream;
+	uint8_t _maxMessageSize;
+	char * _msg;
+	char *_msg_ptr;
+
+	cmd_t *cmd_tbl_list, *cmd_tbl;
+
+	const char * _banner;
+	const char * _prompt;
+	const char * _unrecognized;
+
+	bool _echo;
+
+	void parse(char *cmd);
+	void handler();
+
+	bool(*_catchall)(char * line);
+public:
+	Cmd(Stream *stream, int maxMessageSize, bool echo,const  char * banner,const char * prompt,const char* unrecognize);
+
+	//displays the prompt
+	void display();
+
+	//should be called every loop cycle
+	void Poll();
+
+	//add a new command handler
+	void Add(const char *name, void(*func)(int argc, char **argv));
+
+	void SetCatchAll(bool(*func)(char * line));
+};
 
 #endif //CMD_H

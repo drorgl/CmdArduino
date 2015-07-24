@@ -6,6 +6,14 @@ to them.
 *****************************************************/
 #include <Cmd.h>
 
+const char Banner[] = "*************** CMD *******************";
+const char Prompt[] = "CMD >> ";
+const char BadCommand[] = "CMD: Command not recognized.";
+
+Cmd cmdSerial(&Serial, 50,false, (char*)&Banner, (char*)&Prompt, (char*)&BadCommand);
+
+
+
 int led_pin = 13;
 bool led_blink_enb = false;
 int led_blink_delay_time = 1000;
@@ -17,8 +25,7 @@ void setup()
   pinMode(led_pin, OUTPUT); 
   pinMode(pwm_pin, OUTPUT); 
   
-  // init the command line and set it for a speed of 57600
-  cmdInit(57600);
+  Serial.begin(57600);
   
   // add the commands to the command table. These functions must
   // already exist in the sketch. See the functions below. 
@@ -28,16 +35,16 @@ void setup()
   //
   // arg_cnt is the number of arguments typed into the command line
   // args is a list of argument strings that were typed into the command line
-  cmdAdd("hello", hello);
-  cmdAdd("args", arg_display);
-  cmdAdd("blink", led_blink);
-  cmdAdd("pwm", led_pwm);
+  cmdSerial.Add("hello", hello);
+  cmdSerial.Add("args", arg_display);
+  cmdSerial.Add("blink", led_blink);
+  cmdSerial.Add("pwm", led_pwm);
   
 }
 
 void loop()
 {
-  cmdPoll();
+  cmdSerial.Poll();
   
   if (led_blink_enb)
   {
@@ -97,7 +104,8 @@ void led_blink(int arg_cnt, char **args)
 {
   if (arg_cnt > 1)
   {
-    led_blink_delay_time = cmdStr2Num(args[1], 10);
+	String str = args[1];
+    led_blink_delay_time = str.toInt();
     led_blink_enb = true;
   }
   else
@@ -125,7 +133,8 @@ void led_pwm(int arg_cnt, char **args)
   if (arg_cnt > 1)
   {
     // if args are present, then use the first arg as the brightness level
-    pwm_val = cmdStr2Num(args[1], 10);
+	String str = args[1];
+    pwm_val = str.toInt();
     analogWrite(pwm_pin, pwm_val);
   }
   else

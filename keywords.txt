@@ -9,10 +9,10 @@
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
-cmdInit	KEYWORD2
-cmdPoll	KEYWORD2
-cmdAdd	KEYWORD2
-cmdStr2Num	KEYWORD2
+Cmd KEYWORD2
+Poll	KEYWORD2
+Add	KEYWORD2
+SetCatchAll	KEYWORD2
 
 #######################################
 # Constants (LITERAL1)
