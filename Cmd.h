@@ -41,7 +41,7 @@
 #ifndef CMD_H
 #define CMD_H
 
-//#define MAX_MSG_SIZE    60
+#define MAX_MSG_SIZE    80
 #include <stdint.h>
 #include <Stream.h>
 

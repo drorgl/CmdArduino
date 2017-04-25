@@ -102,7 +102,7 @@ void Cmd::display()
 void Cmd::parse(char *cmd)
 {
     uint8_t argc, i = 0;
-    char *argv[30];
+    char *argv[MAX_MSG_SIZE];
     cmd_t *cmd_entry;
 
     fflush(stdout);
@@ -126,7 +126,7 @@ void Cmd::parse(char *cmd)
     do
     {
         argv[++i] = strtok(NULL, " ");
-    } while ((i < 30) && (argv[i] != NULL));
+    } while ((i < MAX_MSG_SIZE) && (argv[i] != NULL));
     
     // save off the number of arguments for the particular command.
     argc = i;
@@ -138,7 +138,7 @@ void Cmd::parse(char *cmd)
         if (!strcmp(argv[0], cmd_entry->cmd))
         {
             cmd_entry->func(argc, argv);
-            display();
+            //display();
             return;
         }
     }
